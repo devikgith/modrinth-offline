@@ -41,6 +41,10 @@ jobs:
           git apply --ignore-whitespace --whitespace=nowarn ../offline-account.patch
           git status --short
 
+      - name: Use production API settings (same as official build)
+        shell: bash
+        run: cp src/packages/app-lib/.env.prod src/packages/app-lib/.env
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
