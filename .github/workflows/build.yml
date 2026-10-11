@@ -1,55 +1,69 @@
 name: Build Modrinth App (offline account)
- 
+
 on:
   workflow_dispatch:
   push:
     branches: [main]
- 
+
 env:
   UPSTREAM_COMMIT: 8f703ae3b4ded20f2d24613ed766bfcadec653b8
   TURBO_TELEMETRY_DISABLED: 1
- 
+
 jobs:
   build:
     runs-on: windows-latest
     timeout-minutes: 120
     steps:
+      - name: Git settings (keep LF line endings, allow long paths)
+        shell: bash
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+          git config --global core.longpaths true
+
       - name: Checkout this repo (patch lives here)
         uses: actions/checkout@v4
- 
+
       - name: Fetch Modrinth source at pinned commit
         shell: bash
         run: |
-          git clone https://github.com/modrinth/code.git src
-          git -C src checkout "$UPSTREAM_COMMIT"
- 
+          mkdir src
+          cd src
+          git init -q
+          git remote add origin https://github.com/modrinth/code.git
+          git fetch --depth 1 origin "$UPSTREAM_COMMIT"
+          git checkout -q FETCH_HEAD
+
       - name: Apply offline account patch
         shell: bash
-        run: git -C src apply --whitespace=nowarn ../offline-account.patch
- 
+        run: |
+          cd src
+          git apply --ignore-whitespace --whitespace=nowarn ../offline-account.patch
+          git status --short
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
- 
+
       - name: Enable corepack (pnpm)
         run: corepack enable
- 
+
       - name: Install Rust toolchain (version pinned by the project)
         shell: bash
         run: rustup toolchain install 1.95.0 --profile minimal
- 
+
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src
- 
+
       - name: Install JS dependencies
         working-directory: src
         run: pnpm install
- 
+
       - name: Build app
         working-directory: src
         run: pnpm app:build
- 
+
       - name: Upload installers
         uses: actions/upload-artifact@v4
         with:
