@@ -322,3 +322,121 @@ index b835ad4..2f86f25 100644
          let max_age = cache_intent.max_age();
          let stale_profile = {
              let mut profile_cache = PROFILE_CACHE.lock().await;
+ 
+diff --git a/apps/app-frontend/src/components/ui/minecraft-required-modal/MinecraftRequiredModal.vue b/apps/app-frontend/src/components/ui/minecraft-required-modal/MinecraftRequiredModal.vue
+--- a/apps/app-frontend/src/components/ui/minecraft-required-modal/MinecraftRequiredModal.vue
++++ b/apps/app-frontend/src/components/ui/minecraft-required-modal/MinecraftRequiredModal.vue
+@@ -43,6 +43,36 @@
+ 					{{ formatMessage(messages.signIn) }}
+ 				</Button>
+ 			</div>
++			<div v-if="showOffline" class="flex flex-col gap-2">
++				<input
++					v-model="offlineName"
++					type="text"
++					maxlength="16"
++					autocomplete="off"
++					:placeholder="formatMessage(messages.offlineUsername)"
++					class="w-full"
++					@keyup.enter="createOffline()"
++				/>
++				<div class="grid grid-cols-2 gap-2">
++					<Button @click="showOffline = false">
++						{{ formatMessage(messages.cancelOffline) }}
++					</Button>
++					<Button
++						type="colored"
++						color="brand"
++						:disabled="!offlineNameValid || loadingOffline"
++						@click="createOffline()"
++					>
++						<SpinnerIcon v-if="loadingOffline" class="animate-spin" />
++						<PlusIcon v-else />
++						{{ formatMessage(messages.createOffline) }}
++					</Button>
++				</div>
++			</div>
++			<Button v-else class="w-full" :disabled="loadingSignIn" @click="showOffline = true">
++				<UserIcon />
++				{{ formatMessage(messages.addOffline) }}
++			</Button>
+ 			<p class="m-0 text-center text-sm text-secondary">
+ 				{{ formatMessage(messages.dontHaveAccount) }}
+ 				<a
+@@ -57,15 +87,15 @@
+ </template>
+ 
+ <script setup lang="ts">
+-import { MessagesSquareIcon, SpinnerIcon } from '@modrinth/assets'
++import { MessagesSquareIcon, PlusIcon, SpinnerIcon, UserIcon } from '@modrinth/assets'
+ import { Button, ButtonLink, defineMessages, NewModal, useVIntl } from '@modrinth/ui'
+-import { inject, type Ref, ref } from 'vue'
++import { computed, inject, type Ref, ref } from 'vue'
+ 
+ import steveImage from '@/assets/steve-look-up-left.webp'
+ import type AccountsCard from '@/components/ui/AccountsCard.vue'
+ import { handleSevereError } from '@/composables/use-error.js'
+ import { trackEvent } from '@/helpers/analytics'
+-import { login as loginFlow, set_default_user } from '@/helpers/auth.js'
++import { login as loginFlow, login_offline, set_default_user } from '@/helpers/auth.js'
+ 
+ const { formatMessage } = useVIntl()
+ const accountsCard = inject('accountsCard') as Ref<InstanceType<typeof AccountsCard> | null>
+@@ -100,10 +130,30 @@ const messages = defineMessages({
+ 		id: 'minecraft-required.get-minecraft',
+ 		defaultMessage: 'Get Minecraft',
+ 	},
++	addOffline: {
++		id: 'minecraft-required.add-offline',
++		defaultMessage: 'Play with an offline account',
++	},
++	createOffline: {
++		id: 'minecraft-required.create-offline',
++		defaultMessage: 'Create offline account',
++	},
++	cancelOffline: {
++		id: 'minecraft-required.cancel-offline',
++		defaultMessage: 'Cancel',
++	},
++	offlineUsername: {
++		id: 'minecraft-required.offline-username',
++		defaultMessage: 'Offline username (3-16 chars)',
++	},
+ })
+ 
+ const modal = ref<InstanceType<typeof NewModal>>()
+ const loadingSignIn = ref(false)
++const showOffline = ref(false)
++const loadingOffline = ref(false)
++const offlineName = ref('')
++const offlineNameValid = computed(() => /^[A-Za-z0-9_]{3,16}$/.test(offlineName.value.trim()))
+ 
+ function show() {
+ 	modal.value?.show()
+@@ -127,6 +177,26 @@ async function signIn() {
+ 	}
+ }
+ 
++async function createOffline() {
++	if (!offlineNameValid.value) return
++	loadingOffline.value = true
++
++	try {
++		const created = await login_offline(offlineName.value.trim())
++		if (!created) return
++
++		await set_default_user(created.profile.id)
++		await accountsCard.value?.refreshValues()
++		offlineName.value = ''
++		showOffline.value = false
++		modal.value?.hide()
++	} catch (error) {
++		handleSevereError(error)
++	} finally {
++		loadingOffline.value = false
++	}
++}
++
+ defineExpose({
+ 	show,
+ })
