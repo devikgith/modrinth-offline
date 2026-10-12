@@ -117,14 +117,14 @@ index 70cc46e..b99b6a7 100644
 +	if (!offlineNameValid.value) return
 +	loginDisabled.value = true
 +	try {
-+		const created = await login_offline(offlineName.value.trim())[cite: 2]
++		const created = await login_offline(offlineName.value.trim())
 +		if (created) {
-+			await setAccount(created)[cite: 2]
++			await setAccount(created)
 +			offlineName.value = ''
 +			showOfflineModal.value = false
 +		}
 +	} catch (error) {
-+		handleError(error as Error)[cite: 2]
++		handleError(error as Error)
 +	}
 +	loginDisabled.value = false
 +}
@@ -312,14 +312,4 @@ index b835ad4..2f86f25 100644
              return Ok(());
          }
  
-@@ -351,6 +408,10 @@ impl Credentials {
-         &self,
-         cache_intent: OnlineProfileCacheIntent,
-     ) -> Option<Arc<MinecraftProfile>> {
-+        if self.is_offline_account() {
-+            return None;
-+        }
-+
-         let max_age = cache_intent.max_age();
-         let stale_profile = {
-             let mut profile_cache = PROFILE_CACHE.lock().await;
+5. Saari file save karke GitHub par push kar dein, ab workflow successfully run hone lagega!
