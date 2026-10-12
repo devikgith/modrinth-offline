@@ -1,14 +1,14 @@
 name: Build Modrinth App (offline account)
- 
+
 on:
   workflow_dispatch:
   push:
     branches: [main]
- 
+
 env:
   UPSTREAM_COMMIT: 8f703ae3b4ded20f2d24613ed766bfcadec653b8
   TURBO_TELEMETRY_DISABLED: 1
- 
+
 jobs:
   build:
     runs-on: windows-latest
@@ -20,10 +20,10 @@ jobs:
           git config --global core.autocrlf false
           git config --global core.eol lf
           git config --global core.longpaths true
- 
+
       - name: Checkout this repo (patch lives here)
         uses: actions/checkout@v4
- 
+
       - name: Fetch Modrinth source at pinned commit
         shell: bash
         run: |
@@ -33,45 +33,49 @@ jobs:
           git remote add origin https://github.com/modrinth/code.git
           git fetch --depth 1 origin "$UPSTREAM_COMMIT"
           git checkout -q FETCH_HEAD
- 
-      - name: Apply offline account patch
+
+      - name: Apply offline account patch with 3way fallback
         shell: bash
         run: |
           cd src
-          git apply --ignore-whitespace --whitespace=nowarn ../offline-account.patch
+          git apply --3way --ignore-space-change --ignore-whitespace --whitespace=nowarn ../offline-account.patch
           git status --short
- 
+
       - name: Use production API settings (same as official build)
         shell: bash
         run: cp src/packages/app-lib/.env.prod src/packages/app-lib/.env
- 
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
- 
+
       - name: Enable corepack (pnpm)
         run: corepack enable
- 
+
       - name: Install Rust toolchain (version pinned by the project)
         shell: bash
         run: rustup toolchain install 1.95.0 --profile minimal
- 
+
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src
-          cache-on-failure: true
- 
+
       - name: Install JS dependencies
         working-directory: src
         run: pnpm install
- 
-      - name: Build app (Windows .exe installer only; MSI rejects the 1.0.0-local version)
-        working-directory: src/apps/app
-        run: pnpm exec tauri build --bundles nsis
- 
+
+      - name: Build app
+        working-directory: src
+        run: pnpm app:build
+
       - name: Upload installers
         uses: actions/upload-artifact@v4
         with:
           name: modrinth-app-offline-windows
-          path: src/target/release/bundle/nsis/*.exe
+          path: |
+            src/target/release/bundle/nsis/*.exe
+            src/target/release/bundle/msi/*.msi
           if-no-files-found: error
+```[cite: 3]
+
+Is code ko apni repository me `.github/workflows/build.yml` ki jagah paste karke save kar dein, aur saath hi ensure karein ki `offline-account.patch` file ke line endings **LF** par set hon taaki koi corruption error na aaye[cite: 3].
