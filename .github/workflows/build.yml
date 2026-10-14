@@ -1,3 +1,4 @@
+
 name: Build Modrinth App (offline account)
 
 on:
@@ -13,18 +14,19 @@ jobs:
   build:
     runs-on: windows-latest
     timeout-minutes: 120
+
     steps:
-      - name: Git settings (keep LF line endings, allow long paths)
+      - name: Git settings
         shell: bash
         run: |
           git config --global core.autocrlf false
           git config --global core.eol lf
           git config --global core.longpaths true
 
-      - name: Checkout this repo (patch lives here)
+      - name: Checkout this repo
         uses: actions/checkout@v4
 
-      - name: Fetch Modrinth source at pinned commit
+      - name: Fetch Modrinth source
         shell: bash
         run: |
           mkdir src
@@ -41,18 +43,19 @@ jobs:
           git apply --ignore-whitespace --whitespace=nowarn ../offline-account.patch
           git status --short
 
-      - name: Use production API settings (same as official build)
+      - name: Use production API settings
         shell: bash
-        run: cp src/packages/app-lib/.env.prod src/packages/app-lib/.env
+        run: |
+          cp src/packages/app-lib/.env.prod src/packages/app-lib/.env
 
       - uses: actions/setup-node@v4
         with:
           node-version: 24
 
-      - name: Enable corepack (pnpm)
+      - name: Enable pnpm
         run: corepack enable
 
-      - name: Install Rust toolchain (version pinned by the project)
+      - name: Install Rust toolchain
         shell: bash
         run: rustup toolchain install 1.95.0 --profile minimal
 
@@ -63,6 +66,23 @@ jobs:
       - name: Install JS dependencies
         working-directory: src
         run: pnpm install
+
+      - name: Inspect app version configuration
+        working-directory: src
+        shell: pwsh
+        run: |
+          Get-ChildItem -Path apps/app -Recurse -File |
+            Where-Object {
+              $_.Name -in @(
+                "tauri.conf.json",
+                "tauri.conf.json5",
+                "package.json"
+              )
+            } |
+            ForEach-Object {
+              Write-Host "`n--- $($_.FullName) ---"
+              Select-String -Path $_.FullName -Pattern '"version"\s*:'
+            }
 
       - name: Build app
         working-directory: src
