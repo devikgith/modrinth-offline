@@ -34,11 +34,11 @@ jobs:
           git fetch --depth 1 origin "$UPSTREAM_COMMIT"
           git checkout -q FETCH_HEAD
 
-      - name: Apply offline account patch with 3way fallback
+      - name: Apply offline account patch
         shell: bash
         run: |
           cd src
-          git apply --3way --ignore-space-change --ignore-whitespace --whitespace=nowarn ../offline-account.patch
+          git apply --ignore-whitespace --whitespace=nowarn ../offline-account.patch
           git status --short
 
       - name: Use production API settings (same as official build)
