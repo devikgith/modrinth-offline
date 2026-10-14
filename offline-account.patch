@@ -2,47 +2,63 @@ diff --git a/apps/app-frontend/src/components/ui/AccountsCard.vue b/apps/app-fro
 index 70cc46e..b99b6a7 100644
 --- a/apps/app-frontend/src/components/ui/AccountsCard.vue
 +++ b/apps/app-frontend/src/components/ui/AccountsCard.vue
-@@ -9,6 +9,21 @@
+@@ -9,6 +9,29 @@
  			<SpinnerIcon v-else class="animate-spin" />
  			{{ formatMessage(messages.signInToMinecraft) }}
  		</Button>
 +
-+		<Button class="w-full" :disabled="loginDisabled" @click="showOffline = true">
++		<div v-if="showOffline" class="flex flex-col gap-2">
++			<input
++				v-model="offlineName"
++				type="text"
++				maxlength="16"
++				autocomplete="off"
++				:placeholder="formatMessage(messages.offlineUsername)"
++				class="w-full"
++				@keyup.enter="createOffline()"
++			/>
++			<div class="flex gap-2">
++				<Button class="flex-1" color="brand" :disabled="!offlineNameValid || loginDisabled" @click="createOffline()">
++					<PlusIcon />
++					{{ formatMessage(messages.createOffline) }}
++				</Button>
++				<Button @click="showOffline = false">Cancel</Button>
++			</div>
++		</div>
++		<Button v-else class="w-full" :disabled="loginDisabled" @click="showOffline = true">
 +			<UserIcon />
 +			{{ formatMessage(messages.addOffline) }}
 +		</Button>
-+		<div v-if="showOffline" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="showOffline = false">
-+			<div class="w-full max-w-sm rounded-xl bg-bg p-5 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="offline-account-title">
-+				<h3 id="offline-account-title" class="mb-3 text-lg font-semibold">{{ formatMessage(messages.addOffline) }}</h3>
-+				<input v-model="offlineName" type="text" maxlength="16" autocomplete="off" :placeholder="formatMessage(messages.offlineUsername)" class="w-full" @keyup.enter="createOffline()" />
-+				<div class="mt-4 flex gap-2">
-+					<Button class="flex-1" :disabled="loginDisabled" @click="showOffline = false">Cancel</Button>
-+					<Button class="flex-1" color="brand" :disabled="!offlineNameValid || loginDisabled" @click="createOffline()"><PlusIcon />{{ formatMessage(messages.createOffline) }}</Button>
-+				</div>
-+			</div>
-+		</div>
  	</div>
  	<Accordion
  		v-else
-@@ -80,6 +103,21 @@
+@@ -80,6 +103,29 @@
  					<PlusIcon />
  					{{ formatMessage(messages.addAccount) }}
  				</Button>
 +
-+				<Button class="w-full" :disabled="loginDisabled" @click="showOffline = true">
++				<div v-if="showOffline" class="flex flex-col gap-2">
++					<input
++						v-model="offlineName"
++						type="text"
++						maxlength="16"
++						autocomplete="off"
++						:placeholder="formatMessage(messages.offlineUsername)"
++						class="w-full"
++						@keyup.enter="createOffline()"
++					/>
++					<div class="flex gap-2">
++						<Button class="flex-1" color="brand" :disabled="!offlineNameValid || loginDisabled" @click="createOffline()">
++							<PlusIcon />
++							{{ formatMessage(messages.createOffline) }}
++						</Button>
++						<Button @click="showOffline = false">Cancel</Button>
++					</div>
++				</div>
++				<Button v-else class="w-full" :disabled="loginDisabled" @click="showOffline = true">
 +					<UserIcon />
 +					{{ formatMessage(messages.addOffline) }}
 +				</Button>
-+				<div v-if="showOffline" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="showOffline = false">
-+					<div class="w-full max-w-sm rounded-xl bg-bg p-5 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="offline-account-title">
-+						<h3 id="offline-account-title" class="mb-3 text-lg font-semibold">{{ formatMessage(messages.addOffline) }}</h3>
-+						<input v-model="offlineName" type="text" maxlength="16" autocomplete="off" :placeholder="formatMessage(messages.offlineUsername)" class="w-full" @keyup.enter="createOffline()" />
-+						<div class="mt-4 flex gap-2">
-+							<Button class="flex-1" :disabled="loginDisabled" @click="showOffline = false">Cancel</Button>
-+							<Button class="flex-1" color="brand" :disabled="!offlineNameValid || loginDisabled" @click="createOffline()"><PlusIcon />{{ formatMessage(messages.createOffline) }}</Button>
-+						</div>
-+					</div>
-+				</div>
  			</div>
  		</div>
  	</Accordion>
@@ -306,121 +322,203 @@ index b835ad4..2f86f25 100644
          let max_age = cache_intent.max_age();
          let stale_profile = {
              let mut profile_cache = PROFILE_CACHE.lock().await;
-
-diff --git a/apps/app-frontend/src/components/ui/minecraft-required-modal/MinecraftRequiredModal.vue b/apps/app-frontend/src/components/ui/minecraft-required-modal/MinecraftRequiredModal.vue
---- a/apps/app-frontend/src/components/ui/minecraft-required-modal/MinecraftRequiredModal.vue
-+++ b/apps/app-frontend/src/components/ui/minecraft-required-modal/MinecraftRequiredModal.vue
-@@ -43,6 +43,36 @@
- 					{{ formatMessage(messages.signIn) }}
- 				</Button>
- 			</div>
-+			<div v-if="showOffline" class="flex flex-col gap-2">
-+				<input
-+					v-model="offlineName"
-+					type="text"
-+					maxlength="16"
-+					autocomplete="off"
-+					:placeholder="formatMessage(messages.offlineUsername)"
-+					class="w-full"
-+					@keyup.enter="createOffline()"
-+				/>
-+				<div class="grid grid-cols-2 gap-2">
-+					<Button @click="showOffline = false">
-+						{{ formatMessage(messages.cancelOffline) }}
-+					</Button>
-+					<Button
-+						type="colored"
-+						color="brand"
-+						:disabled="!offlineNameValid || loadingOffline"
-+						@click="createOffline()"
-+					>
-+						<SpinnerIcon v-if="loadingOffline" class="animate-spin" />
+diff --git a/apps/app-frontend/src/App.vue b/apps/app-frontend/src/App.vue
+--- a/apps/app-frontend/src/App.vue
++++ b/apps/app-frontend/src/App.vue
+@@ -2,6 +2,7 @@
+ import IconEditorModal from '@/components/ui/instance_settings/icon-editor-modal/index.vue'
+ import MinecraftAuthErrorModal from '@/components/ui/minecraft-auth-error-modal/MinecraftAuthErrorModal.vue'
+ import MinecraftRequiredModal from '@/components/ui/minecraft-required-modal/MinecraftRequiredModal.vue'
++import OfflineAccountsModal from '@/components/ui/OfflineAccountsModal.vue'
+ import AppSettingsModal from '@/components/ui/modal/AppSettingsModal.vue'
+ import InstallToPlayModal from '@/components/ui/modal/InstallToPlayModal.vue'
+ import ModpackAlreadyInstalledModal from '@/components/ui/modal/ModpackAlreadyInstalledModal.vue'
+@@ -23,6 +24,7 @@ const error = useError()
+ const errorModal = ref()
+ const minecraftAuthErrorModal = ref()
+ const minecraftRequiredModal = ref()
++const offlineAccountsModal = ref()
+ 
+ const contentInstall = createContentInstall({ router, handleError, appEvents })
+ provideContentInstall(contentInstall)
+@@ -52,6 +54,9 @@ provideContentInstall(contentInstall)
+ 					</NavButton>
+ 				</QuickInstanceSwitcher>
+ 			</suspense>
++			<NavButton v-tooltip.right="'Minecraft accounts'" :to="() => offlineAccountsModal?.show()">
++				<UserIcon />
++			</NavButton>
+ 			<NavButton
+ 				v-tooltip.right="formatMessage(commonMessages.settingsLabel)"
+ 				:to="() => appSettingsModal?.show()"
+@@ -76,6 +81,7 @@ provideContentInstall(contentInstall)
+ 	<ErrorModal ref="errorModal" />
+ 	<MinecraftAuthErrorModal ref="minecraftAuthErrorModal" />
+ 	<MinecraftRequiredModal ref="minecraftRequiredModal" />
++	<OfflineAccountsModal ref="offlineAccountsModal" />
+ 	<ContentInstallModal
+ 		ref="modInstallModal"
+ 		:instances="contentInstallInstances"
+diff --git a/apps/app-frontend/src/components/ui/OfflineAccountsModal.vue b/apps/app-frontend/src/components/ui/OfflineAccountsModal.vue
+new file mode 100644
+--- /dev/null
++++ b/apps/app-frontend/src/components/ui/OfflineAccountsModal.vue
+@@ -0,0 +1,158 @@
++<template>
++	<NewModal ref="modal" header="Minecraft accounts" max-width="480px">
++		<div class="flex flex-col gap-3 w-[420px] max-w-full">
++			<p v-if="accounts.length === 0" class="m-0 text-secondary">
++				No accounts yet. Add an offline account below.
++			</p>
++			<div
++				v-for="account in accounts"
++				:key="account.profile.id"
++				class="flex items-center gap-3 rounded-xl border border-solid p-3"
++				:class="isActive(account) ? 'border-brand' : 'border-surface-4'"
++			>
++				<div
++					class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-button-bg font-semibold text-contrast"
++				>
++					{{ initial(account) }}
++				</div>
++				<div class="min-w-0 flex-1 truncate font-medium text-contrast">
++					{{ account.profile.name }}
++				</div>
++				<span v-if="isActive(account)" class="text-sm font-semibold text-brand">Active</span>
++				<Button v-else :disabled="busy" @click="switchTo(account)">Switch</Button>
++				<IconButton type="quiet" label="Remove account" :disabled="busy" @click="removeAccount(account)">
++					<XIcon />
++				</IconButton>
++			</div>
++
++			<div class="mt-2 flex flex-col gap-2">
++				<span class="text-sm text-secondary">New offline account</span>
++				<div class="flex gap-2">
++					<input
++						v-model="newName"
++						type="text"
++						maxlength="16"
++						autocomplete="off"
++						placeholder="Username (3-16 chars)"
++						class="flex-1"
++						@input="error = ''"
++						@keyup.enter="addAccount"
++					/>
++					<Button type="colored" color="brand" :disabled="!nameValid || busy" @click="addAccount">
++						<SpinnerIcon v-if="busy" class="animate-spin" />
 +						<PlusIcon v-else />
-+						{{ formatMessage(messages.createOffline) }}
++						Add
 +					</Button>
 +				</div>
++				<p v-if="error" class="m-0 text-sm text-red">{{ error }}</p>
++				<p class="m-0 text-xs text-secondary">
++					Letters, numbers and underscore only. Offline accounts work in singleplayer and on
++					offline-mode servers.
++				</p>
 +			</div>
-+			<Button v-else class="w-full" :disabled="loadingSignIn" @click="showOffline = true">
-+				<UserIcon />
-+				{{ formatMessage(messages.addOffline) }}
-+			</Button>
- 			<p class="m-0 text-center text-sm text-secondary">
- 				{{ formatMessage(messages.dontHaveAccount) }}
- 				<a
-@@ -57,15 +87,15 @@
- </template>
- 
- <script setup lang="ts">
--import { MessagesSquareIcon, SpinnerIcon } from '@modrinth/assets'
-+import { MessagesSquareIcon, PlusIcon, SpinnerIcon, UserIcon } from '@modrinth/assets'
- import { Button, ButtonLink, defineMessages, NewModal, useVIntl } from '@modrinth/ui'
--import { inject, type Ref, ref } from 'vue'
-+import { computed, inject, type Ref, ref } from 'vue'
- 
- import steveImage from '@/assets/steve-look-up-left.webp'
- import type AccountsCard from '@/components/ui/AccountsCard.vue'
- import { handleSevereError } from '@/composables/use-error.js'
- import { trackEvent } from '@/helpers/analytics'
--import { login as loginFlow, set_default_user } from '@/helpers/auth.js'
-+import { login as loginFlow, login_offline, set_default_user } from '@/helpers/auth.js'
- 
- const { formatMessage } = useVIntl()
- const accountsCard = inject('accountsCard') as Ref<InstanceType<typeof AccountsCard> | null>
-@@ -100,10 +130,30 @@ const messages = defineMessages({
- 		id: 'minecraft-required.get-minecraft',
- 		defaultMessage: 'Get Minecraft',
- 	},
-+	addOffline: {
-+		id: 'minecraft-required.add-offline',
-+		defaultMessage: 'Play with an offline account',
-+	},
-+	createOffline: {
-+		id: 'minecraft-required.create-offline',
-+		defaultMessage: 'Create offline account',
-+	},
-+	cancelOffline: {
-+		id: 'minecraft-required.cancel-offline',
-+		defaultMessage: 'Cancel',
-+	},
-+	offlineUsername: {
-+		id: 'minecraft-required.offline-username',
-+		defaultMessage: 'Offline username (3-16 chars)',
-+	},
- })
- 
- const modal = ref<InstanceType<typeof NewModal>>()
- const loadingSignIn = ref(false)
-+const showOffline = ref(false)
-+const loadingOffline = ref(false)
-+const offlineName = ref('')
-+const offlineNameValid = computed(() => /^[A-Za-z0-9_]{3,16}$/.test(offlineName.value.trim()))
- 
- function show() {
- 	modal.value?.show()
-@@ -127,6 +177,26 @@ async function signIn() {
- 	}
- }
- 
-+async function createOffline() {
-+	if (!offlineNameValid.value) return
-+	loadingOffline.value = true
++		</div>
++	</NewModal>
++</template>
 +
++<script setup>
++import { PlusIcon, SpinnerIcon, XIcon } from '@modrinth/assets'
++import { Button, IconButton, NewModal } from '@modrinth/ui'
++import { computed, inject, ref } from 'vue'
++
++import { handleSevereError } from '@/composables/use-error.js'
++import {
++	get_default_user,
++	login_offline,
++	remove_user,
++	set_default_user,
++	users,
++} from '@/helpers/auth.js'
++
++const accountsCard = inject('accountsCard', null)
++
++const modal = ref()
++const accounts = ref([])
++const activeId = ref(null)
++const newName = ref('')
++const error = ref('')
++const busy = ref(false)
++
++const nameValid = computed(() => /^[A-Za-z0-9_]{3,16}$/.test(newName.value.trim()))
++
++function isActive(account) {
++	return account.profile.id === activeId.value
++}
++
++function initial(account) {
++	return (account.profile.name?.[0] ?? '?').toUpperCase()
++}
++
++async function refresh() {
 +	try {
-+		const created = await login_offline(offlineName.value.trim())
-+		if (!created) return
++		const list = (await users()) ?? []
++		let current = (await get_default_user()) ?? null
 +
-+		await set_default_user(created.profile.id)
-+		await accountsCard.value?.refreshValues()
-+		offlineName.value = ''
-+		showOffline.value = false
-+		modal.value?.hide()
-+	} catch (error) {
-+		handleSevereError(error)
-+	} finally {
-+		loadingOffline.value = false
++		if (list.length > 0 && !list.some((account) => account.profile.id === current)) {
++			current = list[0].profile.id
++			await set_default_user(current)
++		}
++
++		accounts.value = list
++		activeId.value = current
++		await accountsCard?.value?.refreshValues?.()
++	} catch (e) {
++		handleSevereError(e)
 +	}
 +}
 +
- defineExpose({
- 	show,
- })
++async function show() {
++	await refresh()
++	modal.value?.show()
++}
++
++async function switchTo(account) {
++	busy.value = true
++	try {
++		await set_default_user(account.profile.id)
++		await refresh()
++	} catch (e) {
++		handleSevereError(e)
++	} finally {
++		busy.value = false
++	}
++}
++
++async function removeAccount(account) {
++	busy.value = true
++	try {
++		await remove_user(account.profile.id)
++		await refresh()
++	} catch (e) {
++		handleSevereError(e)
++	} finally {
++		busy.value = false
++	}
++}
++
++async function addAccount() {
++	if (!nameValid.value || busy.value) return
++	busy.value = true
++	error.value = ''
++	try {
++		const created = await login_offline(newName.value.trim())
++		if (created) {
++			await set_default_user(created.profile.id)
++			newName.value = ''
++		}
++		await refresh()
++	} catch (e) {
++		error.value = String(e?.message ?? e)
++	} finally {
++		busy.value = false
++	}
++}
++
++defineExpose({
++	show,
++})
++</script>
