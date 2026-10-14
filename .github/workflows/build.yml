@@ -1,4 +1,3 @@
-
 name: Build Modrinth App (offline account)
 
 on:
@@ -67,22 +66,41 @@ jobs:
         working-directory: src
         run: pnpm install
 
-      - name: Inspect app version configuration
+      - name: Fix MSI-compatible version
         working-directory: src
         shell: pwsh
         run: |
-          Get-ChildItem -Path apps/app -Recurse -File |
-            Where-Object {
-              $_.Name -in @(
-                "tauri.conf.json",
-                "tauri.conf.json5",
-                "package.json"
-              )
-            } |
-            ForEach-Object {
-              Write-Host "`n--- $($_.FullName) ---"
-              Select-String -Path $_.FullName -Pattern '"version"\s*:'
+          $file = "apps/app-frontend/package.json"
+
+          if (!(Test-Path $file)) {
+            throw "Version file not found: $file"
+          }
+
+          $json = Get-Content $file -Raw | ConvertFrom-Json
+
+          Write-Host "Original version: $($json.version)"
+
+          if ($json.version -match '-local$') {
+            $json.version = $json.version -replace '-local$', '-1'
+          }
+
+          if ($json.version -match '-([^.]*)$') {
+            $identifier = $Matches[1]
+
+            if ($identifier -notmatch '^\d+$') {
+              throw "MSI prerelease identifier is not numeric: $identifier"
             }
+
+            if ([long]$identifier -gt 65535) {
+              throw "MSI prerelease identifier exceeds 65535: $identifier"
+            }
+          }
+
+          Write-Host "Updated version: $($json.version)"
+
+          $json |
+            ConvertTo-Json -Depth 100 |
+            Set-Content $file -Encoding utf8
 
       - name: Build app
         working-directory: src
